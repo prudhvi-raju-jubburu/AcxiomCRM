@@ -289,46 +289,6 @@ Visit `http://localhost:5173` (or the port displayed in your terminal) in your b
 
 ---
 
-## 🧪 Automated Testing
-
-The project includes **142 automated tests** covering security, RBAC, business workflows, and edge cases.
-
-To execute all test suites simultaneously:
-```bash
-cd server
-npm test
-```
-
-### Test Suite Summary:
-
-```text
-====================================================
-ACXIOM CRM - MASTER AUTOMATED TEST SUITE RUNNER
-====================================================
-
-[1/6] Phase 2: Authentication & RBAC (testPhase2.js)
-  --> PASSED (22 tests passed, 0 failed)
-
-[2/6] Phase 3: Customer & Lead Management (testPhase3.js)
-  --> PASSED (25 tests passed, 0 failed)
-
-[3/6] Phase 4: Opportunities & Follow-Ups (testPhase4.js)
-  --> PASSED (27 tests passed, 0 failed)
-
-[4/6] Phase 5: Dashboard & Analytics (testPhase5.js)
-  --> PASSED (25 tests passed, 0 failed)
-
-[5/6] Registration & Security Flow (testRegisterFlow.js)
-  --> PASSED (14 tests passed, 0 failed)
-
-[6/6] End-to-End Business Lifecycle Workflow (testEndToEndWorkflow.js)
-  --> PASSED (29 tests passed, 0 failed)
-
-====================================================
-OVERALL SUMMARY: 6 Suites Passed, 0 Failed (142 Total Tests)
-====================================================
-```
-
 ### Production Build Verification
 To verify the frontend production bundle:
 ```bash
@@ -441,31 +401,3 @@ The application supports the complete commercial sales cycle:
 - `GET /api/health` — Public uptime and MongoDB connectivity check
 
 ---
-
-## 🎓 Final-Year B.Tech Viva / Interview Preparation
-
-During an interview, a student can clearly articulate every aspect of this project:
-
-1. **Why MERN?**
-   - JavaScript across both client and server reduces context switching.
-   - Non-blocking I/O in Node.js handles concurrent I/O operations smoothly.
-   - JSON-like BSON documents in MongoDB map directly to React state objects.
-
-2. **How does RBAC work?**
-   - **Backend**: Every request is intercepted by `protect` middleware to verify the JWT token and load the active user from MongoDB. `authorizeRoles('Admin', ...)` verifies permissions before passing execution to the controller.
-   - **Database queries**: For Sales Executives, query filters automatically append `{ assignedTo: req.user._id }`, preventing horizontal privilege escalation at the database layer.
-   - **Frontend**: The `ProtectedRoute` component validates session state and role permissions, redirecting unauthorized users or rendering an Access Denied barrier.
-
-3. **How does Lead Conversion work?**
-   - An endpoint `/api/leads/:id/convert` performs atomic operations: verifies lead eligibility, creates a new `Customer` record, assigns it to the same rep, and updates the lead status to `Converted` with a reference to the customer.
-
-4. **Security Highlights**:
-   - `bcryptjs` salt rounds for irreversible password storage.
-   - Passwords excluded by default using Mongoose `select: false`.
-   - Account lockout mechanism preventing brute-force dictionary attacks.
-   - Public registration restricted from elevating to privileged roles.
-
----
-
-## 📄 License
-This project was developed for academic and recruitment evaluation purposes for **Acxiom Consulting**.
