@@ -1,0 +1,252 @@
+/* ==========================================================================
+   AcxiomCRM Centralized Design System
+   Tailored for a clean, professional, final-year B.Tech Student CRM Assignment.
+   ========================================================================== */
+
+:root {
+  /* Restrained, professional CRM color palette */
+  --crm-primary: #2563eb;
+  --crm-primary-hover: #1d4ed8;
+  --crm-secondary: #475569;
+  --crm-success: #16a34a;
+  --crm-warning: #d97706;
+  --crm-danger: #dc2626;
+  --crm-info: #0284c7;
+
+  /* Neutrals & Surfaces */
+  --crm-bg: #f8fafc;
+  --crm-card-bg: #ffffff;
+  --crm-border: #e2e8f0;
+  --crm-border-subtle: #f1f5f9;
+  --crm-text: #0f172a;
+  --crm-text-muted: #64748b;
+
+  /* Typography & Geometry */
+  --crm-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --crm-radius: 6px;
+  --crm-radius-sm: 4px;
+  --crm-radius-lg: 8px;
+  --crm-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --crm-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* Base Document */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--crm-font);
+  background-color: var(--crm-bg);
+  color: var(--crm-text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Consistent Page Headers */
+.crm-page-header {
+  background-color: #ffffff;
+  border: 1px solid var(--crm-border);
+  border-radius: var(--crm-radius-lg);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--crm-shadow-sm);
+}
+
+.crm-page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--crm-text);
+  margin-bottom: 0.25rem;
+}
+
+.crm-page-subtitle {
+  font-size: 0.875rem;
+  color: var(--crm-text-muted);
+  margin-bottom: 0;
+}
+
+/* Card Styling */
+.crm-card {
+  background-color: var(--crm-card-bg);
+  border: 1px solid var(--crm-border);
+  border-radius: var(--crm-radius);
+  box-shadow: var(--crm-shadow-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.crm-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: var(--crm-shadow);
+}
+
+.crm-card .card-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--crm-border);
+  padding: 0.875rem 1.25rem;
+  font-weight: 600;
+}
+
+/* Table Styling */
+.crm-table-container {
+  background-color: #ffffff;
+  border: 1px solid var(--crm-border);
+  border-radius: var(--crm-radius);
+  box-shadow: var(--crm-shadow-sm);
+  overflow: hidden;
+}
+
+.table.crm-table {
+  margin-bottom: 0;
+  font-size: 0.875rem;
+  color: var(--crm-text);
+}
+
+.table.crm-table thead th {
+  background-color: #f8fafc;
+  color: var(--crm-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--crm-border);
+  white-space: nowrap;
+}
+
+.table.crm-table tbody td {
+  padding: 0.8rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--crm-border);
+}
+
+.table.crm-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Buttons */
+.btn {
+  border-radius: var(--crm-radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.4rem 0.85rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.btn-sm {
+  font-size: 0.8125rem;
+  padding: 0.25rem 0.6rem;
+}
+
+/* Form Controls */
+.form-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--crm-secondary);
+  margin-bottom: 0.35rem;
+}
+
+.form-control, .form-select {
+  border: 1px solid #cbd5e1;
+  border-radius: var(--crm-radius-sm);
+  font-size: 0.875rem;
+  padding: 0.45rem 0.75rem;
+  color: var(--crm-text);
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--crm-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Badges */
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.55rem;
+  border-radius: var(--crm-radius-sm);
+  letter-spacing: 0.02em;
+}
+
+/* Standardized Empty State */
+.crm-empty-state {
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  background-color: #ffffff;
+  border: 1px dashed var(--crm-border);
+  border-radius: var(--crm-radius);
+  margin: 1rem 0;
+}
+
+.crm-empty-state-icon {
+  font-size: 2.25rem;
+  color: var(--crm-text-muted);
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.crm-empty-state-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--crm-text);
+  margin-bottom: 0.25rem;
+}
+
+.crm-empty-state-text {
+  font-size: 0.875rem;
+  color: var(--crm-text-muted);
+  max-width: 420px;
+  margin: 0 auto 1.25rem auto;
+}
+
+/* Standardized Loading Spinner */
+.crm-loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 4rem 1rem;
+}
+
+.crm-loading-text {
+  font-size: 0.875rem;
+  color: var(--crm-text-muted);
+  margin-top: 0.75rem;
+}
+
+/* Status Indicators */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.status-dot.online {
+  background-color: var(--crm-success);
+}
+
+.status-dot.offline {
+  background-color: var(--crm-danger);
+}
+
+/* Navbar active indicator */
+.navbar-nav .nav-link.active {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+/* Filter Bar Styling */
+.crm-filter-bar {
+  background-color: #ffffff;
+  border: 1px solid var(--crm-border);
+  border-radius: var(--crm-radius);
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--crm-shadow-sm);
+}
