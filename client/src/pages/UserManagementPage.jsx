@@ -4,7 +4,8 @@ import { useAuth } from '../context/AuthContext';
 
 /**
  * User Management Page (Admin Only)
- * Allows Admin to search, view, create, edit, and activate/deactivate users.
+ * Allows Admin to search, view, create, edit, and activate/deactivate users
+ * with a unified Add/Edit modal.
  */
 const UserManagementPage = () => {
   const { user: currentAdmin } = useAuth();
@@ -19,28 +20,18 @@ const UserManagementPage = () => {
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
-  // Modal / Form state
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-
-  // New User Form State
-  const [newFormData, setNewFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'Sales Executive',
-  });
-
-  // Edit User Form State
-  const [editFormData, setEditFormData] = useState({
-    name: '',
-    email: '',
-    role: 'Sales Executive',
-    password: '',
-  });
-
+  // Modal & Form state (unified for Add and Edit)
+  const [showModal, setShowModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+
+  const initialForm = {
+    name: '',
+    email: '',
+    password: '',
+    role: 'Sales Executive',
+  };
+  const [formData, setFormData] = useState(initialForm);
 
   // Fetch users with current query parameters
   const fetchUsers = useCallback(async () => {
@@ -65,128 +56,127 @@ const UserManagementPage = () => {
     fetchUsers();
   }, [fetchUsers]);
 
-  // Handle Create User
-  const handleCreateSubmit = async (e) => {
+  // Open modal for creating a new user
+  const handleOpenAdd = () => {
+    setEditingUser(null);
+    setFormData(initialForm);
+    setError('');
+    setShowModal(true);
+  };
+
+  // Open modal for editing an existing user
+  const handleOpenEdit = (u) => {
+    setEditingUser(u);
+    setFormData({
+      name: u.name || '',
+      email: u.email || '',
+      role: u.role || 'Sales Executive',
+      password: '', // Optional on edit
+    });
+    setError('');
+    setShowModal(true);
+  };
+
+  // Handle Form Submit (both Create and Edit)
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccessMsg('');
 
-    if (!newFormData.name || !newFormData.email || !newFormData.password) {
-      setError('Name, email, and password are required.');
+    if (!formData.name.trim() || !formData.email.trim()) {
+      setError('Name and email are required.');
+      return;
+    }
+
+    if (!editingUser && (!formData.password || formData.password.length < 6)) {
+      setError('Password must be at least 6 characters long.');
       return;
     }
 
     try {
       setActionLoading(true);
-      await createUserApi(newFormData);
-      setSuccessMsg(`User ${newFormData.name} created successfully.`);
-      setShowCreateModal(false);
-      setNewFormData({ name: '', email: '', password: '', role: 'Sales Executive' });
-      fetchUsers();
-    } catch (err) {
-      setError(err.message || 'Failed to create user.');
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
-  // Open Edit Modal
-  const openEditModal = (u) => {
-    setSelectedUser(u);
-    setEditFormData({
-      name: u.name,
-      email: u.email,
-      role: u.role,
-      password: '',
-    });
-    setError('');
-    setShowEditModal(true);
-  };
+      if (editingUser) {
+        const payload = {
+          name: formData.name.trim(),
+          email: formData.email.trim().toLowerCase(),
+          role: formData.role,
+        };
+        // Only include password if explicitly provided
+        if (formData.password && formData.password.trim().length >= 6) {
+          payload.password = formData.password.trim();
+        }
 
-  // Handle Edit User
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedUser) return;
-    setError('');
-    setSuccessMsg('');
-
-    try {
-      setActionLoading(true);
-      const updatePayload = {
-        name: editFormData.name,
-        email: editFormData.email,
-        role: editFormData.role,
-      };
-      if (editFormData.password.trim()) {
-        updatePayload.password = editFormData.password.trim();
+        await updateUserApi(editingUser._id, payload);
+        setSuccessMsg(`User "${formData.name}" updated successfully.`);
+      } else {
+        await createUserApi({
+          name: formData.name.trim(),
+          email: formData.email.trim().toLowerCase(),
+          password: formData.password,
+          role: formData.role,
+        });
+        setSuccessMsg(`User "${formData.name}" created successfully.`);
       }
 
-      await updateUserApi(selectedUser._id, updatePayload);
-      setSuccessMsg(`User ${editFormData.name} updated successfully.`);
-      setShowEditModal(false);
-      setSelectedUser(null);
+      setShowModal(false);
+      setEditingUser(null);
+      setFormData(initialForm);
       fetchUsers();
     } catch (err) {
-      setError(err.message || 'Failed to update user.');
+      setError(err.message || 'Failed to save user.');
     } finally {
       setActionLoading(false);
     }
   };
 
-  // Handle Toggle Status (Activate / Deactivate)
-  const handleToggleStatus = async (userToToggle) => {
-    if (userToToggle._id === currentAdmin.id) {
+  // Toggle user activation status
+  const handleToggleStatus = async (targetUser) => {
+    if (targetUser._id === currentAdmin.id || targetUser._id === currentAdmin._id) {
       setError('You cannot deactivate your own administrative account.');
       return;
     }
 
-    const actionText = userToToggle.isActive ? 'deactivate' : 'activate';
-    if (!window.confirm(`Are you sure you want to ${actionText} ${userToToggle.name}?`)) {
+    const action = targetUser.isActive ? 'deactivate' : 'activate';
+    if (!window.confirm(`Are you sure you want to ${action} user "${targetUser.name}"?`)) {
       return;
     }
 
     try {
       setError('');
       setSuccessMsg('');
-      await toggleUserStatusApi(userToToggle._id);
-      setSuccessMsg(`User ${userToToggle.name} status updated.`);
+      await toggleUserStatusApi(targetUser._id);
+      setSuccessMsg(`User "${targetUser.name}" ${targetUser.isActive ? 'deactivated' : 'activated'} successfully.`);
       fetchUsers();
     } catch (err) {
-      setError(err.message || 'Failed to update status.');
+      setError(err.message || 'Failed to toggle user status.');
     }
   };
 
+  // Role badge color helper
   const getRoleBadgeClass = (role) => {
     switch (role) {
       case 'Admin':
-        return 'bg-danger';
+        return 'bg-danger text-white';
       case 'Manager':
-        return 'bg-primary';
+        return 'bg-primary text-white';
       case 'Sales Executive':
-        return 'bg-success';
+        return 'bg-success text-white';
       default:
-        return 'bg-secondary';
+        return 'bg-secondary text-white';
     }
   };
 
   return (
     <div className="user-management-page">
-      {/* Header */}
+      {/* Page Header */}
       <div className="crm-page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
         <div>
           <h2 className="crm-page-title">User Management</h2>
-          <p className="crm-page-subtitle">
-            Manage CRM users and roles
-          </p>
+          <p className="crm-page-subtitle">Admin control center for team accounts and role-based permissions</p>
         </div>
-        <button
-          className="btn btn-primary d-flex align-items-center gap-2"
-          onClick={() => {
-            setError('');
-            setShowCreateModal(true);
-          }}
-        >
-          <span>+</span> Add User
+        <button className="btn btn-primary d-flex align-items-center gap-2" onClick={handleOpenAdd}>
+          <span>+</span> Create New User
         </button>
       </div>
 
@@ -205,7 +195,7 @@ const UserManagementPage = () => {
         </div>
       )}
 
-      {/* Search & Filter Toolbar */}
+      {/* Filter Toolbar */}
       <div className="card crm-card mb-4">
         <div className="card-body p-3">
           <div className="row g-2">
@@ -213,7 +203,7 @@ const UserManagementPage = () => {
               <input
                 type="text"
                 className="form-control form-control-sm"
-                placeholder="Search by name or email..."
+                placeholder="Search users by name or email..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -230,7 +220,7 @@ const UserManagementPage = () => {
                 <option value="Sales Executive">Sales Executive</option>
               </select>
             </div>
-            <div className="col-6 col-md-3">
+            <div className="col-6 col-md-2">
               <select
                 className="form-select form-select-sm"
                 value={statusFilter}
@@ -241,7 +231,7 @@ const UserManagementPage = () => {
                 <option value="false">Inactive Only</option>
               </select>
             </div>
-            <div className="col-12 col-md-1">
+            <div className="col-12 col-md-2">
               <button
                 className="btn btn-outline-secondary btn-sm w-100"
                 onClick={() => {
@@ -249,7 +239,6 @@ const UserManagementPage = () => {
                   setRoleFilter('');
                   setStatusFilter('');
                 }}
-                title="Clear filters"
               >
                 Reset
               </button>
@@ -262,7 +251,7 @@ const UserManagementPage = () => {
       <div className="card crm-card">
         <div className="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
           <h5 className="card-title mb-0 fw-bold">System Users ({users.length})</h5>
-          <span className="badge bg-light text-dark border">Admin Authorized</span>
+          <span className="badge bg-light text-dark border">Admin Control</span>
         </div>
         <div className="card-body p-0">
           {loading ? (
@@ -272,7 +261,8 @@ const UserManagementPage = () => {
             </div>
           ) : users.length === 0 ? (
             <div className="text-center py-5 text-muted">
-              <p className="mb-0">No users found matching the selected criteria.</p>
+              <span className="fs-1 d-block mb-2">👥</span>
+              <p className="mb-0">No users found matching your search.</p>
             </div>
           ) : (
             <div className="table-responsive">
@@ -283,38 +273,37 @@ const UserManagementPage = () => {
                     <th>Email</th>
                     <th>Role</th>
                     <th>Status</th>
-                    <th>Created</th>
+                    <th>Registered</th>
                     <th className="text-end">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((u) => {
-                    const isSelf = u._id === currentAdmin.id;
+                    const isSelf = u._id === currentAdmin.id || u._id === currentAdmin._id;
                     return (
                       <tr key={u._id}>
                         <td>
                           <strong>{u.name}</strong>
-                          {isSelf && <span className="badge bg-info-subtle text-info-emphasis ms-2 small">You</span>}
+                          {isSelf && <span className="badge bg-secondary ms-2 small">You</span>}
                         </td>
                         <td>{u.email}</td>
                         <td>
                           <span className={`badge ${getRoleBadgeClass(u.role)}`}>{u.role}</span>
                         </td>
                         <td>
-                          {u.isActive ? (
-                            <span className="badge bg-success">Active</span>
-                          ) : (
-                            <span className="badge bg-secondary">Inactive</span>
-                          )}
+                          <span className={`badge ${u.isActive ? 'bg-success' : 'bg-danger'}`}>
+                            {u.isActive ? 'Active' : 'Deactivated'}
+                          </span>
                         </td>
-                        <td className="small text-muted">
-                          {new Date(u.createdAt).toLocaleDateString()}
+                        <td>
+                          <span className="small text-muted">
+                            {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}
+                          </span>
                         </td>
                         <td className="text-end">
                           <button
                             className="btn btn-outline-primary btn-sm me-2"
-                            onClick={() => openEditModal(u)}
-                            title="Edit User"
+                            onClick={() => handleOpenEdit(u)}
                           >
                             Edit
                           </button>
@@ -322,7 +311,7 @@ const UserManagementPage = () => {
                             className={`btn btn-sm ${u.isActive ? 'btn-outline-danger' : 'btn-outline-success'}`}
                             onClick={() => handleToggleStatus(u)}
                             disabled={isSelf}
-                            title={isSelf ? 'Cannot deactivate self' : u.isActive ? 'Deactivate' : 'Activate'}
+                            title={isSelf ? 'Cannot deactivate self' : u.isActive ? 'Deactivate user' : 'Activate user'}
                           >
                             {u.isActive ? 'Deactivate' : 'Activate'}
                           </button>
@@ -337,163 +326,97 @@ const UserManagementPage = () => {
         </div>
       </div>
 
-      {/* Create User Modal (rendered as clean backdrop overlay) */}
-      {showCreateModal && (
+      {/* Unified Add / Edit Modal */}
+      {showModal && (
         <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title fw-bold">Create New User</h5>
+                <h5 className="modal-title fw-bold">
+                  {editingUser ? `Edit User: ${editingUser.name}` : 'Create New User'}
+                </h5>
                 <button
                   type="button"
                   className="btn-close"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => setShowModal(false)}
                   disabled={actionLoading}
                 ></button>
               </div>
-              <form onSubmit={handleCreateSubmit}>
+              <form onSubmit={handleSubmit}>
                 <div className="modal-body">
                   <div className="mb-3">
                     <label className="form-label small fw-semibold">Full Name *</label>
                     <input
                       type="text"
                       className="form-control"
-                      value={newFormData.name}
-                      onChange={(e) => setNewFormData({ ...newFormData, name: e.target.value })}
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="e.g. Jane Doe"
                       required
                     />
                   </div>
+
                   <div className="mb-3">
                     <label className="form-label small fw-semibold">Email Address *</label>
                     <input
                       type="email"
                       className="form-control"
-                      value={newFormData.email}
-                      onChange={(e) => setNewFormData({ ...newFormData, email: e.target.value })}
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="e.g. jane@acxiom.com"
                       required
                     />
                   </div>
+
                   <div className="mb-3">
-                    <label className="form-label small fw-semibold">Initial Password * (min 6 chars)</label>
+                    <label className="form-label small fw-semibold">
+                      {editingUser ? 'Reset Password (optional, min 6 chars)' : 'Initial Password * (min 6 chars)'}
+                    </label>
                     <input
                       type="password"
                       className="form-control"
-                      value={newFormData.password}
-                      onChange={(e) => setNewFormData({ ...newFormData, password: e.target.value })}
-                      placeholder="Set initial password"
-                      required
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      placeholder={editingUser ? 'Leave blank to keep current password' : 'Enter password'}
+                      required={!editingUser}
                       minLength={6}
                     />
                   </div>
+
                   <div className="mb-3">
                     <label className="form-label small fw-semibold">Assigned Role *</label>
                     <select
                       className="form-select"
-                      value={newFormData.role}
-                      onChange={(e) => setNewFormData({ ...newFormData, role: e.target.value })}
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                      disabled={editingUser && (editingUser._id === currentAdmin.id || editingUser._id === currentAdmin._id)}
                     >
                       <option value="Sales Executive">Sales Executive</option>
                       <option value="Manager">Manager</option>
                       <option value="Admin">Admin</option>
                     </select>
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => setShowCreateModal(false)}
-                    disabled={actionLoading}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary btn-sm" disabled={actionLoading}>
-                    {actionLoading ? 'Creating...' : 'Create User'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit User Modal */}
-      {showEditModal && selectedUser && (
-        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title fw-bold">Edit User: {selectedUser.name}</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowEditModal(false)}
-                  disabled={actionLoading}
-                ></button>
-              </div>
-              <form onSubmit={handleEditSubmit}>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label className="form-label small fw-semibold">Full Name *</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={editFormData.name}
-                      onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label small fw-semibold">Email Address *</label>
-                    <input
-                      type="email"
-                      className="form-control"
-                      value={editFormData.email}
-                      onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label small fw-semibold">Role *</label>
-                    <select
-                      className="form-select"
-                      value={editFormData.role}
-                      onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
-                      disabled={selectedUser._id === currentAdmin.id}
-                    >
-                      <option value="Sales Executive">Sales Executive</option>
-                      <option value="Manager">Manager</option>
-                      <option value="Admin">Admin</option>
-                    </select>
-                    {selectedUser._id === currentAdmin.id && (
-                      <small className="text-muted">You cannot change your own Admin role.</small>
+                    {editingUser && (editingUser._id === currentAdmin.id || editingUser._id === currentAdmin._id) && (
+                      <div className="form-text small text-muted">
+                        You cannot change your own administrative role.
+                      </div>
                     )}
                   </div>
-                  <div className="mb-3">
-                    <label className="form-label small fw-semibold">Reset Password (leave empty to keep current)</label>
-                    <input
-                      type="password"
-                      className="form-control"
-                      value={editFormData.password}
-                      onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
-                      placeholder="Optional new password"
-                      minLength={6}
-                    />
-                  </div>
                 </div>
                 <div className="modal-footer">
                   <button
                     type="button"
                     className="btn btn-secondary btn-sm"
-                    onClick={() => setShowEditModal(false)}
+                    onClick={() => setShowModal(false)}
                     disabled={actionLoading}
                   >
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-primary btn-sm" disabled={actionLoading}>
-                    {actionLoading ? 'Saving...' : 'Save Changes'}
+                    {actionLoading
+                      ? 'Saving...'
+                      : editingUser
+                      ? 'Update User'
+                      : 'Create User'}
                   </button>
                 </div>
               </form>

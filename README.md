@@ -1,403 +1,253 @@
-# AcxiomCRM — Customer Relationship Management System
+# 💼 AcxiomCRM
 
-A full-stack, role-based Customer Relationship Management (CRM) web application built using the **MERN** stack (MongoDB, Express.js, React, Node.js). Developed as a final-year B.Tech Computer Science & Engineering assignment for **Acxiom Consulting**, the system streamlines lead qualification, customer relationships, sales opportunity pipelines, and client activity scheduling with strict server-side Role-Based Access Control (RBAC).
+> A simple, easy-to-understand **MERN Stack** (MongoDB, Express, React, Node.js) Customer Relationship Management web application built for college assignments and technical interviews.
 
 ---
 
-## 📸 Application Screenshots
+## 📌 What is AcxiomCRM?
 
-### 1. Modern Landing Page
+In simple terms, **AcxiomCRM** is a web tool used by sales teams to turn strangers into paying customers and keep track of daily business activities.
+
+Think of it as a digital notebook and pipeline for a company's sales team:
+1. **Catch a Lead** (someone interested in your product, e.g., from LinkedIn or your website).
+2. **Convert the Lead** into an official **Customer** with 1 click once they are qualified.
+3. **Create a Sales Deal (Opportunity)** to track the deal value in Rupees (₹) and the probability of winning it.
+4. **Schedule Follow-Ups** (phone calls, meetings, or emails) so the sales rep never forgets an appointment.
+5. **View Dashboard & Reports** to see real-time charts showing total revenue won, active deals, and team performance.
+
+---
+
+## 📸 Screenshots & Visual Tour
+
+### 1. Welcome & Landing Page
+A clean, welcoming homepage introducing the platform with quick links to sign in or register.
 ![AcxiomCRM Landing Page](./images/landing-hero.png)
 
-### 2. Core Capabilities & Role Architecture
+---
+
+### 2. Role-Based Permissions & Capabilities
+Three distinct roles designed to keep company data safe and organized:
+- **Admin**: Has full power over the system and manages employee accounts.
+- **Manager**: Oversees the entire sales team, monitors deals, and reads reports.
+- **Sales Executive**: Focused purely on their own assigned leads, customers, and calls.
 ![Core Capabilities and RBAC](./images/capabilities-roles.png)
 
-### 3. Role-Aware KPI Dashboard & Real-Time Charts
+---
+
+### 3. Live Dashboard & Interactive Charts
+As soon as you log in, you see your key numbers (Total Leads, Customers, Active Pipeline, Won Revenue) and Chart.js graphs showing deal stages.
 ![Role-Aware Dashboard](./images/dashboard-analytics.png)
 
-### 4. Interactive Reporting & Date Range Analytics
+---
+
+### 4. Visual KPI Analytics
+Track your sales funnel distribution and follow-up completion status at a glance.
+![KPI Charts](./images/kpi-charts.png)
+
+---
+
+### 5. Multi-Tab Reports with Date Filters
+Filter data by preset dates (**Today**, **This Week**, **This Month**) or custom dates to see pipeline health, conversion rates, and sales rep performance.
 ![Reports and Analytics](./images/reports-filtering.png)
 
-### 5. MongoDB Database Collections
+---
+
+### 6. MongoDB Database Structure
+Clean, standard MongoDB collections stored locally or in the cloud.
 ![MongoDB Compass Database Collections](./images/mongodb-compass.png)
 
 ---
 
-## 🚀 Key Features
+## 🔄 The Complete Sales Workflow (How It Works)
 
-### 1. Authentication & Security
-- **JWT Stateless Authentication**: Secure token generation (`jsonwebtoken`) with expiration.
-- **Cryptographic Password Hashing**: Passwords hashed using `bcryptjs` with salt rounds before database persistence.
-- **Brute-Force Account Protection**: Automatically locks accounts for 15 minutes after 5 consecutive failed login attempts.
-- **Public Self-Registration**: Public users register with the default `Sales Executive` role. Attempts to self-assign `Admin` or `Manager` roles are strictly blocked with HTTP 400.
-- **Session Verification**: `/api/auth/me` verifies tokens and returns active user profiles without exposing password hashes.
-
-### 2. Role-Based Access Control (RBAC)
-- **Admin**: Full organizational oversight, user management (create, update, toggle active status), all CRM data access, and organization reports. Admins are safeguarded from deactivating themselves.
-- **Manager**: Team oversight, lead allocation, opportunity progression review, customer lists, and team-wide reporting. Cannot modify user accounts or roles.
-- **Sales Executive**: Personal sales workspace strictly isolated to assigned leads, customers, opportunities, and follow-ups. Cannot access or modify other reps' records.
-
-### 3. Lead Management & Conversion Funnel
-- Complete CRUD operations for leads with contact info, lead source, and status tracking (`New`, `Contacted`, `Qualified`, `Lost`, `Converted`).
-- **One-Click Lead-to-Customer Conversion**: Atomic workflow that creates an active `Customer` record, preserves lead attribution, updates the lead status to `Converted`, and prevents duplicate conversions.
-
-### 4. Customer Management
-- Complete customer directory with name, company, email, phone, address, and status (`Active`, `Inactive`).
-- Dynamic search by customer name, company, or email with status filtering.
-- Strict ownership enforcement where Sales Executives only manage accounts assigned to them.
-
-### 5. Sales Opportunity Pipeline
-- Track deals across 6 standard sales stages: `Prospecting`, `Qualification`, `Proposal`, `Negotiation`, `Closed Won`, and `Closed Lost`.
-- Deal value tracking in INR (₹) with numeric probability percentage (0–100%).
-- Automatic probability calibration: Moving to `Closed Won` sets probability to 100%; `Closed Lost` sets it to 0%.
-- Validation preventing past close dates for active pipeline deals.
-
-### 6. Scheduled Follow-Ups & Activities
-- Schedule client interactions across activity types: `Call`, `Email`, `Meeting`, `Visit`, and `Other`.
-- Status lifecycle: `Pending`, `Completed`, `Cancelled`.
-- Multi-entity associations linking follow-ups to Customers, Leads, and Opportunities.
-
-### 7. Interactive Dashboards & Analytics
-- Role-aware KPI summary cards: Total Leads, Total Customers, Open Deals, Active Pipeline Value, Won Value, and Pending Tasks.
-- Visual data representations using **Chart.js** and **react-chartjs-2**:
-  - Opportunity Pipeline Deals by Stage (Bar chart)
-  - Lead Distribution Funnel (Doughnut chart)
-  - Follow-Up Activity Breakdown (Doughnut chart)
-
-### 8. Cross-Entity Business Reports
-- Dedicated reporting tabs for:
-  - **Sales Pipeline Analysis** (Stage breakdown, deal counts, pipeline values, win ratios)
-  - **Lead Conversion Report** (Conversion percentages by marketing channel)
-  - **Opportunities Report** (Detailed deal register with stage filtering)
-  - **Customer Reports** (Account activity summaries)
-  - **Activity & Follow-Up Reports** (Completion metrics)
-  - **Team Performance Report** (Manager/Admin-only rep activity analysis)
-- **Flexible Date Filtering**: Preset filters (`Today`, `This Week`, `This Month`) and custom date ranges (`startDate` / `endDate`).
-
----
-
-## 🛠️ Technology Stack & Student Rationale
-
-| Layer | Technology | Rationale & Practical Justification |
-|---|---|---|
-| **Frontend** | React 18 + Vite | Modern functional components, hooks (`useState`, `useEffect`, `useContext`, `useCallback`), and lightning-fast Vite build system. |
-| **Routing** | React Router v6 | Declarative client-side routing, protected route guards (`ProtectedRoute`), and active link styling. |
-| **Styling** | Bootstrap 5 + Vanilla CSS | Clean, responsive grid system and styled components without third-party template bloat. Fully custom CSS tokens in `index.css`. |
-| **Charts** | Chart.js + react-chartjs-2 | Lightweight, canvas-rendered charts for CRM pipeline and lead funnels. |
-| **HTTP Client** | Axios | Centralized request instance (`api.js`) with request interceptors for JWT Bearer token injection and response error standardization. |
-| **Backend** | Node.js + Express.js | Asynchronous, event-driven RESTful API architecture with modular routers, controllers, and error handlers. |
-| **Database** | MongoDB + Mongoose 8 | Document-oriented database with schema-level validation, custom methods, pre-save middleware hooks, and aggregation pipelines. |
-| **Security** | JWT + bcryptjs | Industry-standard cryptographic hashing and stateless Bearer token authorization. |
-
----
-
-## 📁 Project Directory Structure
-
-```text
-AcxiomCRM/
-├── images/                        # Application screenshots and documentation assets
-│   ├── landing-hero.png
-│   ├── capabilities-roles.png
-│   ├── dashboard-analytics.png
-│   ├── reports-filtering.png
-│   └── mongodb-compass.png
-│
-├── server/                        # Backend REST API (Express + MongoDB)
-│   ├── config/
-│   │   └── db.js                  # Mongoose connection logic
-│   ├── controllers/
-│   │   ├── authController.js      # Register, login, lockout, logout, /me
-│   │   ├── customerController.js  # Customer CRUD, search, role filtering
-│   │   ├── dashboardController.js # Role-aware dashboard KPI aggregation
-│   │   ├── followUpController.js  # Activity scheduling, updates, status
-│   │   ├── healthController.js    # Health check & system diagnostics
-│   │   ├── leadController.js      # Lead CRUD, assignment, conversion
-│   │   ├── opportunityController.js # Deal pipeline, stage progression
-│   │   ├── reportController.js    # Multi-entity report aggregations
-│   │   └── userController.js      # Admin user management & RBAC
-│   ├── middleware/
-│   │   ├── authMiddleware.js      # JWT protect & authorizeRoles middleware
-│   │   └── errorHandler.js        # Centralized 404 & error handlers
-│   ├── models/
-│   │   ├── Customer.js            # Customer Mongoose schema
-│   │   ├── FollowUp.js            # Follow-up activity schema
-│   │   ├── Lead.js                # Lead funnel schema with conversion ref
-│   │   ├── Opportunity.js         # Opportunity deals schema with stage enum
-│   │   └── User.js                # User schema with bcrypt & lockout methods
-│   ├── routes/
-│   │   ├── authRoutes.js          # /api/auth endpoints
-│   │   ├── customerRoutes.js      # /api/customers endpoints
-│   │   ├── dashboardRoutes.js     # /api/dashboard endpoints
-│   │   ├── followUpRoutes.js      # /api/followups endpoints
-│   │   ├── healthRoutes.js        # /api/health endpoint
-│   │   ├── leadRoutes.js          # /api/leads endpoints
-│   │   ├── opportunityRoutes.js   # /api/opportunities endpoints
-│   │   ├── reportRoutes.js        # /api/reports endpoints
-│   │   └── userRoutes.js          # /api/users endpoints (Admin only)
-│   ├── scripts/
-│   │   ├── seed.js                # Realistic database seeder
-│   │   ├── runAllTests.js         # Master test runner
-│   │   ├── testPhase2.js          # Auth & RBAC test suite (22 tests)
-│   │   ├── testPhase3.js          # Customer & Lead test suite (25 tests)
-│   │   ├── testPhase4.js          # Opportunity & Follow-Up test suite (27 tests)
-│   │   ├── testPhase5.js          # Dashboard & Reports test suite (25 tests)
-│   │   ├── testRegisterFlow.js    # Registration security test suite (14 tests)
-│   │   └── testEndToEndWorkflow.js # Complete CRM business lifecycle (29 tests)
-│   ├── utils/
-│   │   ├── auditLogger.js         # Structured audit logging utility
-│   │   ├── dateFilter.js          # Date range and preset parser
-│   │   └── jwt.js                 # JWT sign and verification helpers
-│   ├── .env.example               # Server environment variables template
-│   ├── package.json               # Backend dependencies & scripts
-│   └── server.js                  # Express application entry point
-│
-├── client/                        # Frontend Single-Page App (React + Vite)
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Footer.jsx         # Global footer with system status
-│   │   │   ├── Layout.jsx         # App layout wrapper
-│   │   │   ├── Navbar.jsx         # Navigation bar with role badges & links
-│   │   │   └── ProtectedRoute.jsx # Client-side route & RBAC guard
-│   │   ├── context/
-│   │   │   └── AuthContext.jsx    # React Context for session management
-│   │   ├── pages/
-│   │   │   ├── CustomerListPage.jsx   # Customer management page
-│   │   │   ├── DashboardPage.jsx      # Role-based KPI dashboard with charts
-│   │   │   ├── FollowUpListPage.jsx   # Activities & follow-ups page
-│   │   │   ├── HomePage.jsx           # Product landing page
-│   │   │   ├── LeadListPage.jsx       # Lead funnel & conversion page
-│   │   │   ├── LoginPage.jsx          # User sign-in page
-│   │   │   ├── NotFoundPage.jsx       # 404 error page
-│   │   │   ├── OpportunityListPage.jsx# Sales deals pipeline page
-│   │   │   ├── RegisterPage.jsx       # Public account creation page
-│   │   │   ├── ReportsPage.jsx        # Reporting & analytics page
-│   │   │   └── UserManagementPage.jsx # Admin user directory & role controls
-│   │   ├── services/
-│   │   │   └── api.js                 # Central Axios API service methods
-│   │   ├── App.jsx                    # Route hierarchy & protection
-│   │   ├── index.css                  # Custom design system & styles
-│   │   └── main.jsx                   # React root entry point
-│   ├── .env.example                   # Client environment variables template
-│   ├── package.json                   # Frontend dependencies & scripts
-│   └── vite.config.js                 # Vite configuration
-│
-├── .gitignore                         # Git ignore configuration
-└── README.md                          # Comprehensive project documentation
+```mermaid
+graph LR
+    A["🎯 1. Lead Created"] --> B["📞 2. Contacted & Qualified"]
+    B --> C["🏢 3. Convert to Customer"]
+    C --> D["💼 4. Open Sales Deal (₹)"]
+    D --> E["📅 5. Schedule Follow-Ups"]
+    E --> F["🎉 6. Closed Won Deal!"]
 ```
 
+1. **Lead Qualification**: A new lead is added (e.g. "Sunil Verma from Acme Corp").
+2. **1-Click Conversion**: Click the **Convert** button. The system automatically creates a new Customer account, marks the lead as `Converted`, and prevents duplicate conversions.
+3. **Opportunity Pipeline**: Create a deal for that customer (e.g., "Cloud Upgrade - ₹1,50,000"). When you advance the stage to `Closed Won`, the win probability automatically jumps to **100%**.
+4. **Follow-Up Scheduling**: Schedule a Meeting or Call. The activity links directly to the customer and deal.
+5. **Dashboard Updates**: All metrics update instantly on the Dashboard and Reports page.
+
 ---
 
-## 🔐 Role Permissions Matrix
+## 👥 The 3 User Roles (Who Can Do What?)
 
-| Module / Action | Admin | Manager | Sales Executive |
+| Feature | Admin | Manager | Sales Executive |
 |---|:---:|:---:|:---:|
-| **Register Account** | Via Admin Panel | Via Admin Panel | Public Sign Up (`/register`) |
-| **User Management** | Full CRUD | ❌ Forbidden | ❌ Forbidden |
-| **Activate/Deactivate User** | Yes (Cannot self-deactivate) | ❌ Forbidden | ❌ Forbidden |
-| **View Customers** | All Customers | All Customers | Assigned Customers Only |
-| **Create Customer** | Yes | Yes | Yes (Auto-assigned to self) |
-| **Delete Customer** | Yes | Yes | ❌ Forbidden |
-| **View Leads** | All Leads | All Leads | Assigned Leads Only |
-| **Create Lead** | Yes | Yes | Yes |
-| **Assign/Reassign Lead** | Any Rep | Any Rep | ❌ Forbidden |
-| **Convert Lead to Customer** | Yes | Yes | Assigned Leads Only |
-| **Opportunities Pipeline** | Organization-wide | Team-wide | Assigned Deals Only |
-| **Follow-Up Activities** | Organization-wide | Team-wide | Assigned Activities Only |
-| **Dashboard Metrics** | Organization Scope | Team Scope | Personal Rep Scope |
-| **Standard Reports** | Yes | Yes | Assigned Scope |
-| **User Performance Report** | Yes | Yes | ❌ Forbidden (HTTP 403) |
+| **Sign Up** | Via Admin Panel | Via Admin Panel | Public Sign-Up (`/register`) |
+| **User Management** | ✅ Full Control | ❌ No Access | ❌ No Access |
+| **Activate / Deactivate Users** | ✅ Yes | ❌ No Access | ❌ No Access |
+| **Customers & Leads** | View & Edit All | View & Edit All | Only View Assigned To Me |
+| **Convert Leads** | ✅ Yes | ✅ Yes | ✅ Yes (Assigned only) |
+| **Delete Records** | ✅ Yes | ✅ Yes | ❌ Forbidden |
+| **Deals & Follow-Ups** | View & Edit All | View & Edit All | Only View Assigned To Me |
+| **Team Performance Reports** | ✅ Yes | ✅ Yes | ❌ Forbidden |
 
 ---
 
-## 👥 Demo Credentials (Seeded)
-
-The repository includes a database seed script (`npm run seed` in `server`) that seeds initial accounts for evaluation:
-
-| Role | Email | Password | Access Scope |
-|---|---|---|---|
-| **Admin** | `admin@acxiom.com` | `Admin@123` | System Administration & Organization Oversight |
-| **Manager** | `manager@acxiom.com` | `Manager@123` | Team Lead & Pipeline Oversight |
-| **Sales Executive** | `sales@acxiom.com` | `Sales@123` | Personal Portfolio & Client Execution |
-
----
-
-## 🚀 How to Set Up and Run Locally
+## ⚡ Quick Start Guide (Run Locally in 3 Steps)
 
 ### Prerequisites
-- **Node.js**: v18.x or v20.x or v22.x
-- **npm**: v9.x or v10.x
-- **MongoDB**: Community Server running locally on `mongodb://127.0.0.1:27017` (or MongoDB Atlas URI)
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/prudhvi-raju-jubburu/AcxiomCRM.git
-cd AcxiomCRM
-```
-
-### 2. Configure Environment Files
-
-**Backend:**
-Copy `server/.env.example` to `server/.env`:
-```env
-PORT=5000
-MONGODB_URI=mongodb://127.0.0.1:27017/acxiom_crm
-CLIENT_URL=http://localhost:5173
-NODE_ENV=development
-JWT_SECRET=acxiom_crm_recruitment_jwt_secret_key_2026
-JWT_EXPIRE=7d
-```
-
-**Frontend:**
-Copy `client/.env.example` to `client/.env`:
-```env
-VITE_API_BASE_URL=http://localhost:5000/api
-```
-
-### 3. Install Dependencies & Seed the Database
-
-**Backend Setup:**
-```bash
-cd server
-npm install
-npm run seed       # Populates demo users, leads, customers, deals, and follow-ups
-```
-
-**Frontend Setup:**
-```bash
-cd ../client
-npm install
-```
-
-### 4. Start the Application
-
-**Terminal 1 — Backend API:**
-```bash
-cd server
-npm run dev
-# Server running at http://localhost:5000
-# Connected to MongoDB: mongodb://127.0.0.1:27017/acxiom_crm
-```
-
-**Terminal 2 — Frontend Application:**
-```bash
-cd client
-npm run dev
-# Vite server running at http://localhost:5173 or http://localhost:5174
-```
-
-Visit `http://localhost:5173` (or the port displayed in your terminal) in your browser.
+- [Node.js](https://nodejs.org/) (v18 or v20+)
+- [MongoDB Community Server](https://www.mongodb.com/try/download/community) installed and running locally on port 27017
 
 ---
 
-### Production Build Verification
-To verify the frontend production bundle:
+### Step 1: Start the Backend Server
+Open a terminal:
+```bash
+cd server
+
+# 1. Create your environment file
+cp .env.example .env
+
+# 2. Install dependencies
+npm install
+
+# 3. Seed demo data (users, customers, leads, deals)
+npm run seed
+
+# 4. Start the server
+npm run dev
+```
+> Server will start at: **`http://localhost:5000`**  
+> Check health status: Visit `http://localhost:5000/api/health` in your browser.
+
+---
+
+### Step 2: Start the React Frontend
+Open a **second terminal**:
+```bash
+cd client
+
+# 1. Create your environment file
+cp .env.example .env
+
+# 2. Install dependencies
+npm install
+
+# 3. Start the Vite dev server
+npm run dev
+```
+> Frontend will open at: **`http://localhost:5173`**
+
+---
+
+### Step 3: Log In with Demo Credentials
+
+| Role | Email | Password | What You Can Test |
+|---|---|---|---|
+| **Admin** | `admin@acxiom.com` | `Admin@123` | User management, activate/deactivate users, all CRM data |
+| **Manager** | `manager@acxiom.com` | `Manager@123` | Team pipeline, reassigning leads/customers, reports |
+| **Sales Executive** | `sales@acxiom.com` | `Sales@123` | Personal assigned leads, converting leads, closing deals |
+
+---
+
+## 🧱 Technology Stack Explained Simply
+
+- **React 18 + Vite**: Builds a fast Single-Page Application (SPA) where pages load instantly without refreshing the browser.
+- **Bootstrap 5.3 + Vanilla CSS**: Gives clean, responsive cards, buttons, modals, and tables that work on mobile and desktop.
+- **Chart.js**: Generates the interactive bar and doughnut charts on the dashboard.
+- **Axios**: Sends HTTP requests to the backend with automatic JWT Bearer token attachment.
+- **Node.js + Express**: Handles API routes, business logic, and security rules.
+- **MongoDB + Mongoose**: Stores data in readable JSON-like documents with built-in schema validation.
+- **bcryptjs**: Hashes user passwords with cryptographic salts so plaintext passwords are never stored.
+- **JWT (JSON Web Token)**: Secures all private API endpoints using stateless token authentication.
+
+---
+
+## 🧪 Automated Testing
+
+The project includes **142 automated tests** that verify login, security checks, role permissions, lead conversion, and pipeline math.
+
+To run all tests:
+```bash
+cd server
+npm test
+```
+
+### Test Suite Summary:
+- ✅ **Phase 2 (Auth & RBAC)**: 22 tests passing
+- ✅ **Phase 3 (Customers & Leads)**: 25 tests passing
+- ✅ **Phase 4 (Opportunities & Follow-Ups)**: 27 tests passing
+- ✅ **Phase 5 (Dashboard & Reports)**: 25 tests passing
+- ✅ **Registration Flow**: 14 tests passing
+- ✅ **End-to-End Business Lifecycle**: 29 tests passing
+- **Total: 142 Passed, 0 Failed (100% Pass Rate)**
+
+To build the frontend for production:
 ```bash
 cd client
 npm run build
-# vite build completed with 0 errors (dist/ generated)
 ```
+Bundle size is under 500 kB with 0 errors.
 
 ---
 
-## 🔄 End-to-End CRM Business Workflow
+## 🎓 Viva & Technical Interview Talking Points
 
-The application supports the complete commercial sales cycle:
+Here are answers to the top questions examiners ask about this project:
+
+1. **How is security handled?**
+   - Passwords are never saved in plaintext. They are encrypted using `bcryptjs` with 10 salt rounds before saving to MongoDB.
+   - When users log in, the backend signs a JSON Web Token (JWT) that lasts 7 days.
+   - Brute-force protection: If someone types the wrong password 5 times, the account is temporarily locked for 15 minutes.
+
+2. **How does Role-Based Access Control (RBAC) work?**
+   - Security is not just hiding buttons in React! True security is checked on the server in database queries:
+     ```javascript
+     if (req.user.role === 'Sales Executive') {
+       query.assignedTo = req.user._id;
+     }
+     ```
+   - A Sales Executive cannot see or edit someone else's customer even if they try to bypass the UI using Postman or curl.
+
+3. **What is the Unified Modal Pattern?**
+   - Instead of writing two separate HTML forms for "Add Customer" and "Edit Customer" (which causes 300+ lines of duplicated code), we use a single modal. If an existing record is selected, it pre-fills the data and runs `PUT`; otherwise, it starts blank and runs `POST`. This makes the code shorter, cleaner, and much easier to debug.
+
+4. **What happens during Lead Conversion?**
+   - An atomic workflow takes the lead's name, email, phone, and company, creates a new `Customer` record, marks the lead as `Converted`, and saves the new customer's ID into `lead.convertedCustomer` so it can never be converted twice.
+
+---
+
+## 📂 Project Directory Overview
 
 ```text
-  [Self-Registration] (/register)
-          │
-          ▼
-   [Authentication] (/login) ──► JWT Bearer Token Issued
-          │
-          ▼
-   [Personal Dashboard] (/dashboard) ──► Initial KPI Inspection
-          │
-          ▼
-    [Create Lead] (/leads) ──► Status: "New", Source: "Website"
-          │
-          ▼
-    [Qualify Lead] (/leads/:id) ──► Status updated to "Qualified"
-          │
-          ▼
-  [Lead Conversion] (/leads/:id/convert) ──► Lead marked "Converted"
-          │
-          ▼
-  [Customer Created] (/customers/:id) ──► Active Customer account generated
-          │
-          ▼
-  [Create Opportunity] (/opportunities) ──► Linked Deal (Stage: "Proposal", ₹1,50,000)
-          │
-          ▼
-  [Schedule Follow-Up] (/followups) ──► Activity scheduled for commercial review
-          │
-          ▼
-  [Complete Follow-Up] (/followups/:id) ──► Status marked "Completed" with notes
-          │
-          ▼
-  [Close Deal (Won)] (/opportunities/:id) ──► Stage: "Closed Won" (Probability: 100%)
-          │
-          ▼
- [Dashboard & Reports] (/dashboard & /reports) ──► Revenue, deals & win rates updated!
+AcxiomCRM/
+├── images/               # Screenshots used in this README
+├── client/               # React Frontend (Vite)
+│   ├── src/
+│   │   ├── components/   # Navbar, Footer, Layout, ProtectedRoute
+│   │   ├── context/      # AuthContext (stores logged-in user & token)
+│   │   ├── pages/        # Dashboard, Customers, Leads, Deals, Reports, Users
+│   │   ├── services/     # api.js (Axios helper for all API calls)
+│   │   ├── App.jsx       # Route definitions
+│   │   ├── index.css     # Clean Bootstrap styling tokens
+│   │   └── main.jsx      # React root
+│   └── package.json
+│
+├── server/               # Express Backend API
+│   ├── config/           # MongoDB database connection (db.js)
+│   ├── controllers/      # Functions handling API logic (Customers, Leads, Deals, etc.)
+│   ├── middleware/       # JWT verification & role authorization checks
+│   ├── models/           # Mongoose Schemas (User, Customer, Lead, Opportunity, FollowUp)
+│   ├── routes/           # REST API endpoints mounted to Express
+│   ├── scripts/          # Seed script & 142 automated tests
+│   ├── utils/            # JWT helpers, date filter, audit logger
+│   └── server.js         # Entry point starting port 5000
+│
+└── README.md             # This guide
 ```
 
 ---
 
-## 📡 REST API Reference
+## 📄 License & Academic Note
 
-### Authentication (`/api/auth`)
-- `POST /api/auth/register` — Public registration (defaults to Sales Executive)
-- `POST /api/auth/login` — Sign in and issue JWT (lockout on 5 failures)
-- `POST /api/auth/logout` — Revoke session
-- `GET /api/auth/me` — Authenticated user profile
-
-### User Administration (`/api/users`) — Admin Only
-- `GET /api/users` — List users with pagination and search
-- `POST /api/users` — Create user with designated role
-- `GET /api/users/:id` — View user profile
-- `PUT /api/users/:id` — Update user details or role
-- `PATCH /api/users/:id/status` — Toggle active status (self-deactivation prevented)
-
-### Customers (`/api/customers`)
-- `GET /api/customers` — List customers (role-filtered for Sales Executives)
-- `POST /api/customers` — Create customer
-- `GET /api/customers/:id` — Customer details
-- `PUT /api/customers/:id` — Update customer
-- `DELETE /api/customers/:id` — Delete customer (Admin & Manager only)
-
-### Leads (`/api/leads`)
-- `GET /api/leads` — List leads (role-filtered for Sales Executives)
-- `POST /api/leads` — Create lead
-- `GET /api/leads/:id` — Lead details
-- `PUT /api/leads/:id` — Update lead status and details
-- `DELETE /api/leads/:id` — Delete lead (Admin & Manager only)
-- `POST /api/leads/:id/convert` — Convert qualified lead into Customer
-
-### Opportunities (`/api/opportunities`)
-- `GET /api/opportunities` — List deals (role-filtered for Sales Executives)
-- `POST /api/opportunities` — Create sales opportunity
-- `GET /api/opportunities/:id` — Opportunity details
-- `PUT /api/opportunities/:id` — Update stage, amount, probability
-- `DELETE /api/opportunities/:id` — Delete deal (Admin & Manager only)
-
-### Follow-Ups (`/api/followups`)
-- `GET /api/followups` — List scheduled activities
-- `POST /api/followups` — Schedule new interaction
-- `GET /api/followups/:id` — Follow-up details
-- `PUT /api/followups/:id` — Update status (`Completed`, `Cancelled`) and notes
-- `DELETE /api/followups/:id` — Delete follow-up
-
-### Dashboard & Analytics (`/api/dashboard`)
-- `GET /api/dashboard/summary` — Role-aware KPI counts, pipeline values, and chart datasets
-
-### Reporting (`/api/reports`)
-- `GET /api/reports/pipeline` — Sales pipeline stage breakdown
-- `GET /api/reports/conversion` — Lead-to-customer conversion metrics by channel
-- `GET /api/reports/opportunities` — Opportunity registry and values
-- `GET /api/reports/customers` — Customer activity summaries
-- `GET /api/reports/followups` — Activity completion metrics
-- `GET /api/reports/user-performance` — Rep performance breakdown (Admin & Manager only)
-
-### System Diagnostics
-- `GET /api/health` — Public uptime and MongoDB connectivity check
-
----
+Developed as a college assignment project for **B.Tech CSE**. Built strictly for educational and demonstration purposes.

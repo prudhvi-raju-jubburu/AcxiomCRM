@@ -11,8 +11,7 @@ import { useAuth } from '../context/AuthContext';
 
 /**
  * Lead List Page
- * Lifecycle pipeline management: New, Contacted, Qualified, Lost, and Converted.
- * Provides Lead-to-Customer conversion workflow and role-based filtering.
+ * Pipeline lead management with unified Add/Edit modal and 1-click lead conversion.
  */
 const LeadListPage = () => {
   const { user, isAdmin, isManager, isSalesExecutive } = useAuth();
@@ -27,13 +26,11 @@ const LeadListPage = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
-  // Modals state
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedLead, setSelectedLead] = useState(null);
+  // Modal & Form state (unified for Add and Edit)
+  const [showModal, setShowModal] = useState(false);
+  const [editingLead, setEditingLead] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Form state
   const initialForm = {
     name: '',
     email: '',
@@ -46,7 +43,7 @@ const LeadListPage = () => {
   };
   const [formData, setFormData] = useState(initialForm);
 
-  // Fetch leads
+  // Fetch leads from backend API
   const fetchLeads = useCallback(async () => {
     try {
       setLoading(true);
@@ -64,7 +61,7 @@ const LeadListPage = () => {
     }
   }, [search, statusFilter]);
 
-  // Load active users for assignment (Admin & Manager only)
+  // Load active users for assignment dropdown (Admin & Manager only)
   useEffect(() => {
     if (isAdmin || isManager) {
       getUsersApi({ isActive: true })
@@ -77,36 +74,17 @@ const LeadListPage = () => {
     fetchLeads();
   }, [fetchLeads]);
 
-  // Handle Create Lead
-  const handleCreateSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.name.trim()) {
-      setError('Lead name is required.');
-      return;
-    }
-
-    try {
-      setActionLoading(true);
-      setError('');
-      setSuccessMsg('');
-      const payload = { ...formData };
-      if (!payload.assignedTo) delete payload.assignedTo;
-
-      await createLeadApi(payload);
-      setSuccessMsg(`Lead "${formData.name}" added to pipeline.`);
-      setShowCreateModal(false);
-      setFormData(initialForm);
-      fetchLeads();
-    } catch (err) {
-      setError(err.message || 'Failed to create lead.');
-    } finally {
-      setActionLoading(false);
-    }
+  // Open modal for creating a new lead
+  const handleOpenAdd = () => {
+    setEditingLead(null);
+    setFormData(initialForm);
+    setError('');
+    setShowModal(true);
   };
 
-  // Open Edit Modal
-  const openEditModal = (lead) => {
-    setSelectedLead(lead);
+  // Open modal for editing an existing lead
+  const handleOpenEdit = (lead) => {
+    setEditingLead(lead);
     setFormData({
       name: lead.name || '',
       email: lead.email || '',
@@ -118,44 +96,53 @@ const LeadListPage = () => {
       notes: lead.notes || '',
     });
     setError('');
-    setShowEditModal(true);
+    setShowModal(true);
   };
 
-  // Handle Edit Submit
-  const handleEditSubmit = async (e) => {
+  // Handle Form Submit (both Create and Edit)
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedLead) return;
+    if (!formData.name.trim()) {
+      setError('Lead name is required.');
+      return;
+    }
 
     try {
       setActionLoading(true);
       setError('');
       setSuccessMsg('');
+
       const payload = { ...formData };
+
+      // Sales Executive cannot reassign
       if (isSalesExecutive) {
         delete payload.assignedTo;
       } else if (!payload.assignedTo) {
         payload.assignedTo = null;
       }
 
-      await updateLeadApi(selectedLead._id, payload);
-      setSuccessMsg(`Lead "${formData.name}" updated successfully.`);
-      setShowEditModal(false);
-      setSelectedLead(null);
+      if (editingLead) {
+        await updateLeadApi(editingLead._id, payload);
+        setSuccessMsg(`Lead "${formData.name}" updated successfully.`);
+      } else {
+        await createLeadApi(payload);
+        setSuccessMsg(`Lead "${formData.name}" added to pipeline.`);
+      }
+
+      setShowModal(false);
+      setEditingLead(null);
+      setFormData(initialForm);
       fetchLeads();
     } catch (err) {
-      setError(err.message || 'Failed to update lead.');
+      setError(err.message || 'Failed to save lead.');
     } finally {
       setActionLoading(false);
     }
   };
 
-  // Handle Convert to Customer
+  // Handle Convert Lead to Customer
   const handleConvertLead = async (lead) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to convert "${lead.name}" (${lead.company || 'Individual'}) into an active Customer account?`
-      )
-    ) {
+    if (!window.confirm(`Are you sure you want to convert "${lead.name}" into an active Customer?`)) {
       return;
     }
 
@@ -163,16 +150,14 @@ const LeadListPage = () => {
       setError('');
       setSuccessMsg('');
       const res = await convertLeadApi(lead._id);
-      setSuccessMsg(
-        `🎉 Successfully converted lead "${lead.name}" into Customer "${res.data.customer?.name}"!`
-      );
+      setSuccessMsg(`🎉 Successfully converted lead "${lead.name}" to Customer account!`);
       fetchLeads();
     } catch (err) {
-      setError(err.message || 'Failed to convert lead to customer.');
+      setError(err.message || 'Failed to convert lead.');
     }
   };
 
-  // Handle Delete Lead
+  // Handle Delete Lead (Admin & Manager only)
   const handleDeleteLead = async (lead) => {
     if (!window.confirm(`Are you sure you want to delete lead "${lead.name}"?`)) {
       return;
@@ -182,14 +167,14 @@ const LeadListPage = () => {
       setError('');
       setSuccessMsg('');
       await deleteLeadApi(lead._id);
-      setSuccessMsg(`Lead "${lead.name}" deleted.`);
+      setSuccessMsg(`Lead "${lead.name}" deleted successfully.`);
       fetchLeads();
     } catch (err) {
       setError(err.message || 'Failed to delete lead.');
     }
   };
 
-  // Badge styling helper
+  // Status badge styling helper
   const getStatusBadge = (status) => {
     switch (status) {
       case 'New':
@@ -213,23 +198,14 @@ const LeadListPage = () => {
       <div className="crm-page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
         <div>
           <h2 className="crm-page-title">Leads</h2>
-          <p className="crm-page-subtitle">
-            Track and manage potential customers
-          </p>
+          <p className="crm-page-subtitle">Track prospective clients through qualification and conversion</p>
         </div>
-        <button
-          className="btn btn-primary d-flex align-items-center gap-2"
-          onClick={() => {
-            setError('');
-            setFormData(initialForm);
-            setShowCreateModal(true);
-          }}
-        >
+        <button className="btn btn-primary d-flex align-items-center gap-2" onClick={handleOpenAdd}>
           <span>+</span> Add Lead
         </button>
       </div>
 
-      {/* Notifications */}
+      {/* Alert Notifications */}
       {error && (
         <div className="alert alert-danger alert-dismissible fade show small" role="alert">
           <strong>Error:</strong> {error}
@@ -244,7 +220,7 @@ const LeadListPage = () => {
         </div>
       )}
 
-      {/* Search & Filter Toolbar */}
+      {/* Filter Toolbar */}
       <div className="card crm-card mb-4">
         <div className="card-body p-3">
           <div className="row g-2">
@@ -252,7 +228,7 @@ const LeadListPage = () => {
               <input
                 type="text"
                 className="form-control form-control-sm"
-                placeholder="Search by prospect name, company, or email..."
+                placeholder="Search by lead name, company, or email..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -289,21 +265,21 @@ const LeadListPage = () => {
       {/* Leads Table */}
       <div className="card crm-card">
         <div className="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-          <h5 className="card-title mb-0 fw-bold">Active Leads ({leads.length})</h5>
+          <h5 className="card-title mb-0 fw-bold">Leads ({leads.length})</h5>
           <span className="badge bg-light text-dark border">
-            {isSalesExecutive ? 'My Assigned Leads' : 'All Leads'}
+            {isSalesExecutive ? 'Assigned to Me' : 'All Leads'}
           </span>
         </div>
         <div className="card-body p-0">
           {loading ? (
             <div className="text-center py-5">
               <div className="spinner-border text-primary" role="status"></div>
-              <p className="mt-2 text-muted small">Loading sales leads...</p>
+              <p className="mt-2 text-muted small">Loading lead records...</p>
             </div>
           ) : leads.length === 0 ? (
             <div className="text-center py-5 text-muted">
               <span className="fs-1 d-block mb-2">🎯</span>
-              <p className="mb-0">No leads found in this view.</p>
+              <p className="mb-0">No leads found matching your criteria.</p>
             </div>
           ) : (
             <div className="table-responsive">
@@ -314,90 +290,68 @@ const LeadListPage = () => {
                     <th>Company</th>
                     <th>Contact Details</th>
                     <th>Status</th>
-                    <th>Assigned Executive</th>
+                    <th>Assigned To</th>
                     <th>Source</th>
                     <th className="text-end">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {leads.map((l) => {
-                    const isConverted = l.status === 'Converted';
-                    const isLost = l.status === 'Lost';
-                    const canConvert = !isConverted && !isLost;
-
-                    return (
-                      <tr key={l._id}>
-                        <td>
-                          <strong>{l.name}</strong>
-                          {l.notes && (
-                            <div className="small text-muted text-truncate" style={{ maxWidth: '200px' }}>
-                              {l.notes}
-                            </div>
-                          )}
-                        </td>
-                        <td>{l.company || <span className="text-muted">—</span>}</td>
-                        <td>
-                          <div className="small">{l.email || 'No email'}</div>
-                          <div className="small text-muted">{l.phone || 'No phone'}</div>
-                        </td>
-                        <td>
-                          {getStatusBadge(l.status)}
-                          {isConverted && (
-                            <div className="small text-success mt-1 fw-semibold">
-                              ✓ Customer Created
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          {l.assignedTo ? (
-                            <div>
-                              <span className="fw-semibold small">{l.assignedTo.name}</span>
-                              <span className="badge bg-light text-dark border ms-1 small">
-                                {l.assignedTo.role}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-muted small">Unassigned</span>
-                          )}
-                        </td>
-                        <td>
-                          <span className="badge text-bg-light border">{l.source}</span>
-                        </td>
-                        <td className="text-end">
-                          <div className="d-flex justify-content-end gap-1">
-                            {canConvert && (
-                              <button
-                                className="btn btn-sm btn-outline-success"
-                                onClick={() => handleConvertLead(l)}
-                                title="Convert Lead into Customer Account"
-                              >
-                                Convert ➔
-                              </button>
-                            )}
-
-                            <button
-                              className="btn btn-outline-primary btn-sm"
-                              onClick={() => openEditModal(l)}
-                              disabled={isConverted}
-                              title={isConverted ? 'Converted leads cannot be modified' : 'Edit Lead'}
-                            >
-                              Edit
-                            </button>
-
-                            {(isAdmin || isManager) && (
-                              <button
-                                className="btn btn-outline-danger btn-sm"
-                                onClick={() => handleDeleteLead(l)}
-                                title="Delete Lead"
-                              >
-                                Delete
-                              </button>
-                            )}
+                  {leads.map((l) => (
+                    <tr key={l._id}>
+                      <td>
+                        <strong>{l.name}</strong>
+                      </td>
+                      <td>{l.company || <span className="text-muted">—</span>}</td>
+                      <td>
+                        <div className="small">{l.email || 'No email'}</div>
+                        <div className="small text-muted">{l.phone || 'No phone'}</div>
+                      </td>
+                      <td>{getStatusBadge(l.status)}</td>
+                      <td>
+                        {l.assignedTo ? (
+                          <div>
+                            <span className="fw-semibold small">{l.assignedTo.name}</span>
+                            <span className="badge bg-light text-dark border ms-1 small">
+                              {l.assignedTo.role}
+                            </span>
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        ) : (
+                          <span className="text-muted small">Unassigned</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className="badge text-bg-light border">{l.source}</span>
+                      </td>
+                      <td className="text-end">
+                        {l.status !== 'Converted' && (
+                          <button
+                            className="btn btn-success btn-sm me-2"
+                            onClick={() => handleConvertLead(l)}
+                            title="Convert lead into customer account"
+                          >
+                            Convert
+                          </button>
+                        )}
+                        {l.status !== 'Converted' && (
+                          <button
+                            className="btn btn-outline-primary btn-sm me-2"
+                            onClick={() => handleOpenEdit(l)}
+                          >
+                            Edit
+                          </button>
+                        )}
+                        {(isAdmin || isManager) && (
+                          <button
+                            className="btn btn-outline-danger btn-sm"
+                            onClick={() => handleDeleteLead(l)}
+                            title="Delete lead"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -405,21 +359,23 @@ const LeadListPage = () => {
         </div>
       </div>
 
-      {/* Create Lead Modal */}
-      {showCreateModal && (
+      {/* Unified Add / Edit Modal */}
+      {showModal && (
         <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title fw-bold">Capture New Lead</h5>
+                <h5 className="modal-title fw-bold">
+                  {editingLead ? `Edit Lead: ${editingLead.name}` : 'Add New Lead'}
+                </h5>
                 <button
                   type="button"
                   className="btn-close"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => setShowModal(false)}
                   disabled={actionLoading}
                 ></button>
               </div>
-              <form onSubmit={handleCreateSubmit}>
+              <form onSubmit={handleSubmit}>
                 <div className="modal-body">
                   <div className="row g-3">
                     <div className="col-12 col-md-6">
@@ -427,7 +383,7 @@ const LeadListPage = () => {
                       <input
                         type="text"
                         className="form-control"
-                        placeholder="e.g. Ramesh Chandra"
+                        placeholder="e.g. Sunil Verma"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         required
@@ -438,7 +394,7 @@ const LeadListPage = () => {
                       <input
                         type="text"
                         className="form-control"
-                        placeholder="e.g. Apex Tech Solutions"
+                        placeholder="e.g. Acme Tech Solutions"
                         value={formData.company}
                         onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                       />
@@ -448,7 +404,7 @@ const LeadListPage = () => {
                       <input
                         type="email"
                         className="form-control"
-                        placeholder="e.g. ramesh@apex.com"
+                        placeholder="e.g. lead@example.com"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       />
@@ -464,7 +420,7 @@ const LeadListPage = () => {
                       />
                     </div>
                     <div className="col-12 col-md-4">
-                      <label className="form-label small fw-semibold">Lead Source</label>
+                      <label className="form-label small fw-semibold">Source</label>
                       <select
                         className="form-select"
                         value={formData.source}
@@ -479,7 +435,7 @@ const LeadListPage = () => {
                       </select>
                     </div>
                     <div className="col-12 col-md-4">
-                      <label className="form-label small fw-semibold">Initial Status</label>
+                      <label className="form-label small fw-semibold">Status</label>
                       <select
                         className="form-select"
                         value={formData.status}
@@ -491,9 +447,10 @@ const LeadListPage = () => {
                         <option value="Lost">Lost</option>
                       </select>
                     </div>
+
                     {(isAdmin || isManager) && (
                       <div className="col-12 col-md-4">
-                        <label className="form-label small fw-semibold">Assign To Executive</label>
+                        <label className="form-label small fw-semibold">Assign To</label>
                         <select
                           className="form-select"
                           value={formData.assignedTo}
@@ -508,137 +465,13 @@ const LeadListPage = () => {
                         </select>
                       </div>
                     )}
-                    <div className="col-12">
-                      <label className="form-label small fw-semibold">Notes & Context</label>
-                      <textarea
-                        className="form-control"
-                        rows="2"
-                        placeholder="Customer requirement, deal size estimation, discussion summary..."
-                        value={formData.notes}
-                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      ></textarea>
-                    </div>
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => setShowCreateModal(false)}
-                    disabled={actionLoading}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary btn-sm" disabled={actionLoading}>
-                    {actionLoading ? 'Saving...' : 'Save Lead'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Edit Lead Modal */}
-      {showEditModal && selectedLead && (
-        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title fw-bold">Edit Lead: {selectedLead.name}</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowEditModal(false)}
-                  disabled={actionLoading}
-                ></button>
-              </div>
-              <form onSubmit={handleEditSubmit}>
-                <div className="modal-body">
-                  <div className="row g-3">
-                    <div className="col-12 col-md-6">
-                      <label className="form-label small fw-semibold">Lead Name *</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="col-12 col-md-6">
-                      <label className="form-label small fw-semibold">Company</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={formData.company}
-                        onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                      />
-                    </div>
-                    <div className="col-12 col-md-6">
-                      <label className="form-label small fw-semibold">Email Address</label>
-                      <input
-                        type="email"
-                        className="form-control"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      />
-                    </div>
-                    <div className="col-12 col-md-6">
-                      <label className="form-label small fw-semibold">Phone Number</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      />
-                    </div>
-                    <div className="col-12 col-md-4">
-                      <label className="form-label small fw-semibold">Lifecycle Status</label>
-                      <select
-                        className="form-select"
-                        value={formData.status}
-                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      >
-                        <option value="New">New</option>
-                        <option value="Contacted">Contacted</option>
-                        <option value="Qualified">Qualified</option>
-                        <option value="Lost">Lost</option>
-                      </select>
-                    </div>
-                    {(isAdmin || isManager) ? (
-                      <div className="col-12 col-md-8">
-                        <label className="form-label small fw-semibold">Reassign Executive</label>
-                        <select
-                          className="form-select"
-                          value={formData.assignedTo}
-                          onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-                        >
-                          <option value="">Unassigned</option>
-                          {usersList.map((u) => (
-                            <option key={u._id} value={u._id}>
-                              {u.name} ({u.role})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    ) : (
-                      <div className="col-12 col-md-8">
-                        <label className="form-label small fw-semibold">Assigned Executive</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={user?.name}
-                          disabled
-                        />
-                        <small className="text-muted">Sales Executives cannot reassign leads.</small>
-                      </div>
-                    )}
                     <div className="col-12">
                       <label className="form-label small fw-semibold">Notes</label>
                       <textarea
                         className="form-control"
-                        rows="2"
+                        rows="3"
+                        placeholder="Additional details about this prospect..."
                         value={formData.notes}
                         onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                       ></textarea>
@@ -649,13 +482,17 @@ const LeadListPage = () => {
                   <button
                     type="button"
                     className="btn btn-secondary btn-sm"
-                    onClick={() => setShowEditModal(false)}
+                    onClick={() => setShowModal(false)}
                     disabled={actionLoading}
                   >
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-primary btn-sm" disabled={actionLoading}>
-                    {actionLoading ? 'Saving...' : 'Save Changes'}
+                    {actionLoading
+                      ? 'Saving...'
+                      : editingLead
+                      ? 'Update Lead'
+                      : 'Create Lead'}
                   </button>
                 </div>
               </form>
